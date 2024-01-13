@@ -1,7 +1,6 @@
-import { Form, useLoaderData, useNavigation } from '@remix-run/react';
+import { Form, useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
 import db from '../db.server';
 import { useEffect, useRef } from 'react';
-// import { useTransition } from 'react';
 
 export const loader = async () => {
     let people = await db.people.findMany();
@@ -34,8 +33,8 @@ export default function People() {
     let navigation = useNavigation();
     let isAdding = navigation.state === "submitting" 
         && navigation.formData.get('_action') === 'create';
-    let isDeleting = navigation.state === "submitting" 
-        && navigation.formData.get('_action') === 'delete';
+    // let isDeleting = navigation.state === "submitting" 
+    //     && navigation.formData.get('_action') === 'delete';
 
     let formRef = useRef();
     let firstNameRef = useRef();
@@ -47,19 +46,14 @@ export default function People() {
         }
 
     }, [isAdding]);
+
     return (
         <main>
             <h2>People</h2>
              {people.length ? (
                 <ul>
                 {people.map((person) => (
-                    <li key={person.id}>
-                        {person.firstName} {person.lastName}{" "}
-                        <Form method='post' style={{display: 'inline'}}>
-                            <input type='hidden' name='id' value={person.id} />
-                            <button type='submit' name='_action' value='delet' disabled={isDeleting}>x</button>
-                        </Form>
-                    </li>
+                    <PersonItem person={person} key={person.id} />
                 ))}
                 <li>
                     <Form ref={formRef} method='post'>
@@ -82,5 +76,24 @@ export default function People() {
                 </div>)}
         </main>
     );
-    
+}
+
+function  PersonItem({ person }) {
+    let fetcher = useFetcher();
+    // let navigation = useNavigation();
+    let isDeleting = fetcher?.formData?.get('id') === person.id;
+    return (
+            <li 
+                style={{
+                    opacity: 
+                    isDeleting ? 0.25 : 1,}}
+                key={person.id}>
+                {person.firstName} {person.lastName}{" "}
+                <fetcher.Form method='post' style={{display: 'inline'}}>
+                    <input type='hidden' name='id' value={person.id} />
+                    <button type='submit' name='_action' value='delet'>x</button>
+                </fetcher.Form>
+            </li>
+
+    );
 }
