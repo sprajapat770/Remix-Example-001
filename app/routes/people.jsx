@@ -21,8 +21,15 @@ export const action = async ({ request }) => {
     }
 
     if(_action === 'delet') {
-        console.log(values.id);
-        await db.people.delete({ where: { id: values.id } });
+        try {
+            if(Math.random() > 0.5){
+                throw new Error('boom boom!');
+            }
+            await db.people.delete({ where: { id: values.id } });
+        } catch(e) {
+            return {error:true};
+        }
+        
     }
 
     return null;
@@ -30,6 +37,7 @@ export const action = async ({ request }) => {
 
 export default function People() {
     let  people  = useLoaderData();
+    let fetcher = useFetcher();
     let navigation = useNavigation();
     let isAdding = navigation.state === "submitting" 
         && navigation.formData.get('_action') === 'create';
@@ -54,7 +62,15 @@ export default function People() {
                 <ul>
                 {people.map((person) => (
                     <PersonItem person={person} key={person.id} />
+                    
                 ))}
+                {isAdding && (
+                    <li key={isAdding} >
+                        {navigation.formData?.get('firstName')}{" "}
+                        {navigation.formData?.get('lastName')}
+                        <button disabled>x</button>
+                    </li>
+                ) }
                 <li>
                     <Form ref={formRef} method='post'>
                         <input type="text" ref={firstNameRef} name='firstName' placeholder='firstName' required/>{" "}
@@ -80,18 +96,22 @@ export default function People() {
 
 function  PersonItem({ person }) {
     let fetcher = useFetcher();
+
     // let navigation = useNavigation();
     let isDeleting = fetcher?.formData?.get('id') === person.id;
+    let isFailedDeletion = fetcher.data?.error;
     return (
             <li 
-                style={{
-                    opacity: 
-                    isDeleting ? 0.25 : 1,}}
+                style={{color: isFailedDeletion ? 'red' : ''}}
+                hidden={isDeleting}
                 key={person.id}>
                 {person.firstName} {person.lastName}{" "}
                 <fetcher.Form method='post' style={{display: 'inline'}}>
                     <input type='hidden' name='id' value={person.id} />
-                    <button type='submit' name='_action' value='delet'>x</button>
+                    <button 
+                        type='submit' name='_action' 
+                        aria-label={isFailedDeletion ? 'Retry' : 'Delete'}
+                    value='delet'>{isFailedDeletion ? 'Retry': 'x'}</button>
                 </fetcher.Form>
             </li>
 
